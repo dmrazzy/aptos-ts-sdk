@@ -10,6 +10,8 @@ import { HexInput, ScriptTransactionArgumentVariants } from "../types";
 
 /**
  * Provides reasons for an address was invalid.
+ * @group Implementation
+ * @category Serialization
  */
 export enum AddressInvalidReason {
   INCORRECT_NUMBER_OF_BYTES = "incorrect_number_of_bytes",
@@ -19,10 +21,13 @@ export enum AddressInvalidReason {
   LEADING_ZERO_X_REQUIRED = "leading_zero_x_required",
   LONG_FORM_REQUIRED_UNLESS_SPECIAL = "long_form_required_unless_special",
   INVALID_PADDING_ZEROES = "INVALID_PADDING_ZEROES",
+  INVALID_PADDING_STRICTNESS = "INVALID_PADDING_STRICTNESS",
 }
 
 /**
  * The input for an account address, which can be either a hexadecimal string or a standard account address.
+ * @group Implementation
+ * @category Serialization
  */
 export type AccountAddressInput = HexInput | AccountAddress;
 
@@ -41,20 +46,28 @@ export type AccountAddressInput = HexInput | AccountAddress;
  *
  * The comments in this class make frequent reference to the LONG and SHORT formats,
  * as well as "special" addresses. To learn what these refer to see AIP-40.
+ * @group Implementation
+ * @category Serialization
  */
 export class AccountAddress extends Serializable implements TransactionArgument {
   /**
    * This is the internal representation of an account address.
+   * @group Implementation
+   * @category Serialization
    */
   readonly data: Uint8Array;
 
   /**
    * The number of bytes that make up an account address.
+   * @group Implementation
+   * @category Serialization
    */
   static readonly LENGTH: number = 32;
 
   /**
    * The length of an address string in LONG form without a leading 0x.
+   * @group Implementation
+   * @category Serialization
    */
   static readonly LONG_STRING_LENGTH: number = 64;
 
@@ -77,6 +90,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    *
    * @param input A Uint8Array representing an account address.
    * @throws ParsingError if the input length is not equal to 32 bytes.
+   * @group Implementation
+   * @category Serialization
    */
   constructor(input: Uint8Array) {
     super();
@@ -98,6 +113,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md.
    *
    * @returns true if the address is special, false otherwise.
+   * @group Implementation
+   * @category Serialization
    */
   isSpecial(): boolean {
     return (
@@ -115,6 +132,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * and other addresses in LONG form (0x + 64 characters).
    *
    * @returns AccountAddress as a string conforming to AIP-40.
+   * @group Implementation
+   * @category Serialization
    */
   toString(): `0x${string}` {
     return `0x${this.toStringWithoutPrefix()}`;
@@ -126,6 +145,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * NOTE: Prefer to use `toString` where possible.
    *
    * @returns AccountAddress as a string without the leading 0x.
+   * @group Implementation
+   * @category Serialization
    */
   toStringWithoutPrefix(): string {
     let hex = bytesToHex(this.data);
@@ -141,6 +162,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * NOTE: Prefer to use `toString` where possible, as it formats special addresses using the SHORT form (no leading 0s).
    *
    * @returns AccountAddress as a string in LONG form.
+   * @group Implementation
+   * @category Serialization
    */
   toStringLong(): `0x${string}` {
     return `0x${this.toStringLongWithoutPrefix()}`;
@@ -153,6 +176,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * NOTE: Prefer to use `toString` where possible, as it formats special addresses using the SHORT form (no leading 0s).
    *
    * @returns {string} The account address in LONG form.
+   * @group Implementation
+   * @category Serialization
    */
   toStringLongWithoutPrefix(): string {
     return bytesToHex(this.data);
@@ -163,6 +188,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * The inner data is already a Uint8Array, so no conversion takes place.
    *
    * @returns Hex data as Uint8Array
+   * @group Implementation
+   * @category Serialization
    */
   toUint8Array(): Uint8Array {
     return this.data;
@@ -178,6 +205,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * address.serialize(serializer);
    * const bytes = serializer.toUint8Array();
    * // `bytes` is now the BCS-serialized address.
+   * @group Implementation
+   * @category Serialization
    */
   serialize(serializer: Serializer): void {
     serializer.serializeFixedBytes(this.data);
@@ -188,6 +217,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * This allows for the proper encoding of data when interacting with entry functions in the blockchain.
    *
    * @param serializer - The serializer instance used to convert the data into bytes.
+   * @group Implementation
+   * @category Serialization
    */
   serializeForEntryFunction(serializer: Serializer): void {
     const bcsBytes = this.bcsToBytes();
@@ -199,6 +230,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * This process involves serializing the variant index and the instance data, making it suitable for transmission.
    *
    * @param serializer - The serializer instance used to perform the serialization.
+   * @group Implementation
+   * @category Serialization
    */
   serializeForScriptFunction(serializer: Serializer): void {
     serializer.serializeU32AsUleb128(ScriptTransactionArgumentVariants.Address);
@@ -215,6 +248,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * const deserializer = new Deserializer(bytes);
    * const address = AccountAddress.deserialize(deserializer);
    * // `address` is now an instance of AccountAddress.
+   * @group Implementation
+   * @category Serialization
    */
   static deserialize(deserializer: Deserializer): AccountAddress {
     const bytes = deserializer.deserializeFixedBytes(AccountAddress.LENGTH);
@@ -249,12 +284,16 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    *
    * @throws {ParsingError} If the hex string does not start with 0x or is not in a valid format.
    *
-   * @note This function has strict parsing behavior. For relaxed behavior, please use the `fromString` function.
+   * @remarks
+   *
+   * This function has strict parsing behavior. For relaxed behavior, please use the `fromString` function.
    *
    * @see AIP-40 documentation for more details on address formats:
    * https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md.
    *
    * @returns An instance of AccountAddress.
+   * @group Implementation
+   * @category Serialization
    */
   static fromStringStrict(input: string): AccountAddress {
     // Assert the string starts with 0x.
@@ -288,7 +327,7 @@ export class AccountAddress extends Serializable implements TransactionArgument 
   /**
    * NOTE: This function has relaxed parsing behavior. For strict behavior, please use
    * the `fromStringStrict` function. Where possible use `fromStringStrict` rather than this
-   * function, `fromString` is only provided for backwards compatibility.
+   * function, `fromString`.
    *
    * Creates an instance of AccountAddress from a hex string.
    *
@@ -296,23 +335,26 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * following formats are accepted:
    *
    * - LONG, with or without leading 0x
-   * - SHORT, with or without leading 0x
+   * - SHORT*, with or without leading 0x
    *
    * Where:
    * - LONG is 64 hex characters.
-   * - SHORT is 1 to 63 hex characters inclusive.
+   * - SHORT* is 1 to 63 hex characters inclusive. The address can have missing values up to `maxMissingChars` before it is padded.
    * - Padding zeroes are allowed, e.g. 0x0123 is valid.
    *
    * Learn more about the different address formats by reading AIP-40:
    * https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md.
    *
-   * @param input - A hex string representing an account address.
+   * @param input A hex string representing an account address.
+   * @param args.maxMissingChars The number of characters that can be missing in a padded address before it is invalid.
    *
    * @returns An instance of AccountAddress.
    *
    * @throws ParsingError if the hex string is too short, too long, or contains invalid characters.
+   * @group Implementation
+   * @category Serialization
    */
-  static fromString(input: string): AccountAddress {
+  static fromString(input: string, { maxMissingChars = 4 }: { maxMissingChars?: number } = {}): AccountAddress {
     let parsedInput = input;
     // Remove leading 0x for parsing.
     if (input.startsWith("0x")) {
@@ -335,6 +377,14 @@ export class AccountAddress extends Serializable implements TransactionArgument 
       );
     }
 
+    // Ensure that the maxMissingChars is between or equal to 0 and 63.
+    if (maxMissingChars > 63 || maxMissingChars < 0) {
+      throw new ParsingError(
+        `maxMissingChars must be between or equal to 0 and 63. Received ${maxMissingChars}`,
+        AddressInvalidReason.INVALID_PADDING_STRICTNESS,
+      );
+    }
+
     let addressBytes: Uint8Array;
     try {
       // Pad the address with leading zeroes, so it is 64 chars long and then convert
@@ -347,7 +397,21 @@ export class AccountAddress extends Serializable implements TransactionArgument 
       throw new ParsingError(`Hex characters are invalid: ${error?.message}`, AddressInvalidReason.INVALID_HEX_CHARS);
     }
 
-    return new AccountAddress(addressBytes);
+    const address = new AccountAddress(addressBytes);
+
+    // Cannot pad the address if it has more than maxMissingChars missing.
+    if (parsedInput.length < 64 - maxMissingChars) {
+      if (!address.isSpecial()) {
+        throw new ParsingError(
+          `Hex string is too short, must be ${64 - maxMissingChars} to 64 chars long, excluding the leading 0x. You may need to fix 
+the addresss by padding it with 0s before passing it to \`fromString\` (e.g. <addressString>.padStart(64, '0')). 
+Received ${input}`,
+          AddressInvalidReason.TOO_SHORT,
+        );
+      }
+    }
+
+    return address;
   }
 
   /**
@@ -357,10 +421,13 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    *
    * @param input - The input to convert into an AccountAddress. This can be a string representation of an address, a Uint8Array,
    * or an existing AccountAddress.
+   * @param args.maxMissingChars The number of characters that can be missing in a padded address before it is invalid.
+   * @group Implementation
+   * @category Serialization
    */
-  static from(input: AccountAddressInput): AccountAddress {
+  static from(input: AccountAddressInput, { maxMissingChars = 4 }: { maxMissingChars?: number } = {}): AccountAddress {
     if (typeof input === "string") {
-      return AccountAddress.fromString(input);
+      return AccountAddress.fromString(input, { maxMissingChars });
     }
     if (input instanceof Uint8Array) {
       return new AccountAddress(input);
@@ -372,6 +439,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    * Create an AccountAddress from various input types, including strings, Uint8Array, and AccountAddress instances.
    *
    * @param input - The input to convert into an AccountAddress, which can be a string, a Uint8Array, or an AccountAddress.
+   * @group Implementation
+   * @category Serialization
    */
   static fromStrict(input: AccountAddressInput): AccountAddress {
     if (typeof input === "string") {
@@ -395,6 +464,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    *
    * @returns An object indicating whether the address is valid. If valid, valid = true; if not, valid = false with additional details.
    * If the address is invalid, invalidReason will explain why it is invalid, and invalidReasonMessage will provide the error message.
+   * @group Implementation
+   * @category Serialization
    */
   static isValid(args: { input: AccountAddressInput; strict?: boolean }): ParsingResult<AddressInvalidReason> {
     try {
@@ -418,6 +489,8 @@ export class AccountAddress extends Serializable implements TransactionArgument 
    *
    * @param other - The AccountAddress to compare to.
    * @returns true if the AccountAddresses are equal, false if not.
+   * @group Implementation
+   * @category Serialization
    */
   equals(other: AccountAddress): boolean {
     if (this.data.length !== other.data.length) return false;
